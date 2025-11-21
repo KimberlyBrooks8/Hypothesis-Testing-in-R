@@ -1,0 +1,313 @@
+---
+title: "HW Solution 8to10 KB"
+author: "Kimberly Brooks"
+date: "2025-11-10"
+output: pdf_document
+---
+
+
+1. 
+
+Ans: My interests lie in mostly clinical research, and with the prevalence of diabetes I thought it would be interesting to see the strongest predictors for diabetes given certain lifestyle factors. 
+
+My General Questions:
+What are the strongest modifiable lifestyle factors that increase someone's risk for diabetes type 2 . 
+
+Do people who pay less attention to lifestyle factors like sleep quality, diet score and screen time have an increased risk for developing diabetes (i.e increases diabetes risk score)?
+
+
+2. 
+
+The data set obtained from kaggle titled "Health & Lifestyle Data for Diabetes Prediction" is intended for diabetes risk prediction. Each record in the data set reflects an individual's health profile with attributes combining demographics,lifestyle,behavioral,family history and physiological measures of health. 
+
+3. 
+Dependent Variable : 
+Diabetes risk score
+
+Higher diabetes risk score is associated with a higher risk of developing diabetes.I am interested to see the effects of modifiable lifestyle risk factors like screen time and sleep score on diabetes risk.  
+
+
+4. 
+Independent variables:
+Modifiable Risk factors
+education level, income level, employment, diet score, sleep hours per day, screen time hours per day,alcohol consumption per week, smoking status 
+I will include one Non Modifiable risk factor i.e. Age, for completeness
+
+Hypotheses:
+a. Persons with higher income levels are at less risk for diabetes compared to those with lower incomes 
+b. Persons with higher education levels are at less risk for diabetes compared to those with less than a high school education. 
+c. Persons who get less sleep are at an increased risk for diabetes than those who get a normal amount of sleep. 
+d. There is a relationship between screen time hours per day and diabetes risk 
+e. I think income level and education level may interact with each other
+f. Overall I think diet score and smoking status may have the highest impact on diabetes risk score in this model
+
+5.
+Have to create dummy variables for most of these as they are categorical 
+Units:
+Screen time in hours
+Alcohol consumption per week in volume
+Sleep per day in hours
+```{r}
+diabetes_data <-read.csv("/Users/kimberlybrooks/Desktop/Diabetes_and_LifeStyle_Dataset\ .csv", 
+                         stringsAsFactors = FALSE ) #load diabetes data set in R
+
+head(diabetes_data) #viewing my data set
+
+str(diabetes_data) #checking structure of the data
+```
+
+```{r}
+# create dummy variables: education level, income level, employment, gender, smoking
+
+#gender
+diabetes_data$Male <- ifelse(diabetes_data$gender == "Male", 1, 0)
+diabetes_data$Other <- ifelse(diabetes_data$gender == "Other", 1, 0)
+
+# Income level dummies
+diabetes_data$Income_LowerMiddle <- ifelse(diabetes_data$income_level == "Lower-Middle", 1, 0)
+diabetes_data$Income_Middle <- ifelse(diabetes_data$income_level == "Middle", 1, 0)
+diabetes_data$Income_UpperMiddle <- ifelse(diabetes_data$income_level == "Upper-Middle", 1, 0)
+diabetes_data$Income_High <- ifelse(diabetes_data$income_level == "High", 1, 0)
+diabetes_data$Income_Low <- ifelse(diabetes_data$income_level == "Low", 1, 0)
+
+
+#Education dummies 
+diabetes_data$Education_Graduate <- ifelse(diabetes_data$education_level == "Graduate", 1, 0)
+diabetes_data$Education_Postgraduate <- ifelse(diabetes_data$education_level == "Postgraduate", 1, 0)
+diabetes_data$Education_Highschool <- ifelse(diabetes_data$education_level == "Highschool", 1, 0)
+diabetes_data$Education_Noformal <- ifelse(diabetes_data$education_level == "No formal", 1, 0)
+
+
+#employment level dummies 
+diabetes_data$Employed <- ifelse(diabetes_data$employment_status == "Employed", 1, 0)
+diabetes_data$Unemployed <- ifelse(diabetes_data$employment_status == "Unemployed", 1, 0)
+diabetes_data$Retired <- ifelse(diabetes_data$employment_status == "Retired", 1, 0)
+diabetes_data$employment_status_Student <- ifelse(diabetes_data$employment_status == "Student", 1, 0)
+
+#Smoking dummies
+diabetes_data$smoking_status_Former <- ifelse(diabetes_data$smoking_status == "Former", 1, 0)
+diabetes_data$smoking_status_Current <- ifelse(diabetes_data$smoking_status == "Current", 1, 0)
+diabetes_data$smoking_status_Never <- ifelse(diabetes_data$smoking_status == "Never", 1, 0)
+
+```
+
+6.
+In this simple regression, there is no evidence of an association between low income status or sleep hours per day and diabetes risk score,
+both are not statistically significant.But we can assume that income may have a greater effect in the multiple regression when we control other variables 
+```{r}
+bivarate1 <- lm(diabetes_risk_score ~ sleep_hours_per_day, data = diabetes_data)
+summary(bivarate1)
+
+bivarate2 <- lm(diabetes_risk_score ~ Income_Low, data = diabetes_data)
+summary(bivarate2)
+
+
+```
+
+
+7.
+
+Age has the largest impact (beta = 0.290, meaning each decade of life increases risk by ~3 points), followed by diet score (beta = -0.729, so improving diet by 5 points could reduce risk by ~3.6 points) and screen time (beta = 0.270, so reducing screen time by 10 hours/day could lower risk by 2.7 points).
+
+
+The most modifiable variables are diet score, screen time, and smoking status however these behavioral interventions would likely show cumulative benefits over time rather than immediate changes just based on real world scenarios. 
+
+```{r}
+mr1 <- lm(diabetes_risk_score ~ Age + education_level + income_level + employment_status + 
+            diet_score + screen_time_hours_per_day + sleep_hours_per_day +smoking_status + 
+            alcohol_consumption_per_week,  data=diabetes_data)
+
+```
+
+```{r results='asis'}
+
+library(stargazer)
+stargazer(mr1, type = "latex", no.space=TRUE, 
+          dep.var.labels=c("Diabetes Risk Score"), 
+          covariate.labels=c("Age","Education Level: Highschool",
+                           "Education Level: No formal",
+                           "Education Level: Postgraduate",
+                           "Income: Low",
+                           "Income: Lower-Middle",
+                           "Income: Middle",
+                           "Income: Upper-Middle",
+                           "Employment: Retired",
+                           "Employment: Student",
+                           "Employment: Unemployed",
+                           "Diet Score",
+                           "Screen Time Per Day (Hours)",
+                           "Sleep Hours Per Day",
+                           "Smoking Status (Former)",
+                           "Smoking Status (Never)",
+                           "Alcohol Consumption Per Week"), 
+          omit.stat=c("LL","ser","f"),header = FALSE)
+```
+
+
+8.
+In comparing the simple and multiple regressions, I noticed that income levels became statistically significant in the multiple regression when controlling for other factors, whereas they showed little to no association in simple regressions.I assume that this could be an due to supression rather than interaction. 
+
+9.
+
+Hypothesis (Income): This hypothesis was not supported as lower and middle-income groups actually had higher diabetes risk scores compared to the high-income reference group (e.g., Lower-Middle beta = 0.327, p = 0.007), which is the opposite of what I predicted.
+
+Hypothesis (Education): This hypothesis was not supported as education level showed no significant association with diabetes risk at all (all p > 0.05), suggesting that education does not independently predict diabetes risk when controlling for other lifestyle factors.
+
+Hypothesis  (Sleep): This hypothesis was partially supported as sleep hours showed a positive association with diabetes risk (beta = 0.040, p = 0.080), meaning more sleep was marginally associated with higher risk, which is the opposite direction of what I expected, though the effect was only marginally significant.
+
+Hypothesis (Screen time): This hypothesis was strongly supported, screen time had a significant positive association with diabetes risk (beta = 0.270, p < 0.001), confirming that more screen time is associated with higher diabetes risk.
+
+Hypothesis (Diet and smoking impact): This was partially supported - diet score had the largest modifiable effect (beta = -0.729, p < 0.001), but smoking status showed only modest effects with "never smoking" being protective (beta = -0.127, p = 0.047), making diet clearly more impactful than smoking in this model; however, Age actually had the largest overall coefficient (beta = 0.290), though it's non-modifiable.
+
+
+10.
+
+The R squared (0.2709) and adjusted R squared (0.2708) tells us that the model explains approximately 27% of the variation in diabetes risk scores, meaning that 73% of the variation remains unexplained by the variables I included.  
+
+11.
+
+```{r}
+#removing those with p value over 0.05 (education,employment, sleep hours)
+mr3 <- lm(diabetes_risk_score ~ Age + Income_High + Income_UpperMiddle + Income_Middle + 
+            Income_LowerMiddle+ diet_score + screen_time_hours_per_day  
+          +smoking_status_Current +smoking_status_Former +
+            alcohol_consumption_per_week,  data=diabetes_data)
+summary(mr3) 
+```
+
+```{r}
+#ran the regression again removing income which became not significant after removing the previous variables
+mr4 <- lm(diabetes_risk_score ~ Age + diet_score + screen_time_hours_per_day
+          +smoking_status_Current +smoking_status_Former 
+          + alcohol_consumption_per_week,data=diabetes_data)
+summary(mr4) 
+```
+Answer :
+
+I used backward elimination with alpha = 0.05 as the retention criterion. This method would lead me to eliminate all income variables, as they became non-significant (p > 0.05) after removing education, employment, and sleep hours. However, I disagree with completely removing income as it is a well-established social determinant of health and diabetes risk in the literature, regardless of statistical significance in this particular model.Also removing the income variables did not change R squared (remained 0.2708), suggesting they neither help nor hurt prediction in this case
+
+
+12.
+
+Overall Interpretation :
+
+Diet score seems to be the most impactful non modifiable risk factor in terms of its contribution to overall diabetic risk. While income level and education level were hypothesized to be a contributor to higher diabetes risk only income level more so Lower Middle income was the most significant for that group. Screen time was also pretty significant in this model and had a negative effect in terms of increased screen time leading to higher risk of diabetes. I however did also control for one non modifiable risk factor i.e. age for completeness which (not shown here) increased the R squared signficantly and was the most signficant positive contributor to diabetes risk. Therefore a potential weakness in this model is that known modifiable risk factors like age and gender may play a more significant overall picture when predicting diabetes risk, which is also shown in the literature. For this particular model possibly adding physiological factors as well like waist-hip-ratio, bmi etc could also possibly strengthen the models predictive capability. 
+
+
+13. Calculations (using R):
+a. Derive the coefficients from your regression using the formula. (If you run into problems using solve(), try using ginv() instead, which does the same thing but is a bit more robust.)
+
+```{r}
+mrmatrix <- as.matrix(cbind(
+  diabetes_data$Age, 
+  diabetes_data$Education_Highschool,
+  diabetes_data$Education_Noformal,        
+  diabetes_data$Education_Postgraduate,
+  diabetes_data$Income_Low,                
+  diabetes_data$Income_LowerMiddle,
+  diabetes_data$Income_Middle,
+  diabetes_data$Income_UpperMiddle,
+  diabetes_data$Retired,
+  diabetes_data$employment_status_Student, 
+  diabetes_data$Unemployed,
+  diabetes_data$diet_score, 
+  diabetes_data$screen_time_hours_per_day, 
+  diabetes_data$sleep_hours_per_day, 
+  diabetes_data$smoking_status_Former,
+  diabetes_data$smoking_status_Never,      
+  diabetes_data$alcohol_consumption_per_week
+))
+
+mrmatrix <- cbind(1, mrmatrix)
+
+beta_hat <- solve( t(mrmatrix) %*% mrmatrix ) %*% t(mrmatrix) %*% diabetes_data$diabetes_risk_score
+beta_hat
+```
+
+b. For one of the coefficients, confirm its p value as shown in the regression output using the coefficient, its standard error, and pt() in R.
+
+```{r}
+# Using sleep_hours_per_day which has p = 0.080418
+coef_sleep <- 0.039672
+se_sleep <- 0.022692
+t_stat_sleep <- coef_sleep / se_sleep  
+p_value_sleep <- 2 * pt(abs(t_stat_sleep), df = 97279, lower.tail = FALSE)
+p_value_sleep  
+```
+
+
+c. Calculate the R2 and adjusted R2 using R, and confirm that your results match the regression output.
+
+```{r}
+
+y <- diabetes_data$diabetes_risk_score
+ypred <- mrmatrix %*% beta_hat
+
+tss <- sum((y - mean(y))^2)
+sse <- sum((y - ypred)^2)
+r2 <- 1 - (sse/tss)
+r2
+
+```
+
+d. Calculate the F statistic using R and confirm it against the regression output.
+
+
+```{r}
+#first calculating the adjusted R2
+n <- length(y)
+k <- ncol(mrmatrix)-1
+dft <- n - 1
+dfe <- n - k - 1
+(tss/dft - sse/dfe)/ (tss/dft)
+
+#now calculating the f statistic 
+f <- (r2/k) / ((1-r2)/(n-k-1))
+f
+```
+
+14. Add at least one quadratic term into your model and interpret the results. Is it significant? What is
+the effect of a 1-unit increase in that variable at its mean value?
+
+Sleep hours does not have a meaningful/ statistically significant relationship with diabetes risk in this model. 
+
+```{r}
+#adding sleep hours per day as quadratic term 
+quadratic <- lm(diabetes_risk_score ~ Age + education_level + income_level + employment_status 
+                + diet_score + screen_time_hours_per_day + I(sleep_hours_per_day^2) + +smoking_status 
+                + sleep_hours_per_day + alcohol_consumption_per_week,  data=diabetes_data)
+summary(quadratic)
+```
+
+15. Add at least one interaction term to you model and interpret the results. Is it significant? What is the
+effect of a 1-unit increase in one of those interacted variables holding the other at its mean value?
+
+The effect of diet score and sleep hours per day on diabetes risk in this model with the negative interaction coefficient could suggest that better diet (higher diet score) has a stronger protective effect for people who sleep more. However this is not statistically significant in this model. 
+
+```{r}
+#testing the interaction between diet score and sleep hours per day. 
+interact <- lm(diabetes_risk_score ~ Age + education_level + income_level + employment_status 
+               + (diet_score*sleep_hours_per_day) + diet_score + sleep_hours_per_day + smoking_status 
+               + screen_time_hours_per_day+ smoking_status + alcohol_consumption_per_week, data=diabetes_data)
+summary(interact)
+```
+
+
+16. Test either the model in 14 or the model in 15 using the F test for nested models. That is, estimate the
+full model with the variable and quadratic term, or the variable and interaction, and then estimate
+the reduced model without either, and run the F test to establish whether those variables significantly
+improve your model.
+
+```{r}
+complete <- lm(diabetes_risk_score ~ Age + education_level + income_level + 
+                 employment_status + (diet_score*sleep_hours_per_day) 
+               + diet_score + sleep_hours_per_day + smoking_status 
+               + screen_time_hours_per_day+ smoking_status 
+               + alcohol_consumption_per_week, data=diabetes_data)
+reduced <- lm(diabetes_risk_score ~ Age + education_level + income_level + employment_status 
+              + smoking_status + screen_time_hours_per_day+ smoking_status 
+              + alcohol_consumption_per_week, data=diabetes_data)
+anova(reduced, complete)
+```
+
+
